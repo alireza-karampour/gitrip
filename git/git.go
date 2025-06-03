@@ -3,22 +3,30 @@ package git
 import (
 	"context"
 	"io"
+	"os"
 	"os/exec"
 )
 
 type Cmd struct {
-	cmdBuf []string
-	ctx    context.Context
+	beforeExec []func() error
+	cmdBuf     []string
+	ctx        context.Context
 }
 
 func Git() *Cmd {
 	c := new(Cmd)
+	c.beforeExec = make([]func() error, 0, 1)
 	c.cmdBuf = make([]string, 0, 10)
 	c.cmdBuf = append(c.cmdBuf, "git")
 	return c
 }
 
 func (c *Cmd) Clone(remote string, dest string) *Cmd {
+	if dest != "" {
+		c.beforeExec = append(c.beforeExec, func() error {
+			return os.MkdirAll(dest, 0777)
+		})
+	}
 	c.cmdBuf = append(c.cmdBuf, "clone")
 	c.cmdBuf = append(c.cmdBuf, "--no-checkout")
 	c.cmdBuf = append(c.cmdBuf, remote)
@@ -43,6 +51,12 @@ func (c *Cmd) Sp(paths ...string) *Cmd {
 
 func (c *Cmd) Exec(ctx context.Context, stderr io.Writer) ([]byte, string, error) {
 	c.ctx = ctx
+	for _, fn := range c.beforeExec {
+		err := fn()
+		if err != nil {
+			return nil, "", err
+		}
+	}
 	cmd := exec.CommandContext(ctx, c.cmdBuf[0], c.cmdBuf[1:]...)
 	cmd.Stderr = stderr
 	res, err := cmd.Output()

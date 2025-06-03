@@ -21,12 +21,11 @@ var rootCmd = &cobra.Command{
 	// Uncomment the following line if your bare application
 	// has an action associated with it:
 	RunE: func(cmd *cobra.Command, args []string) error {
-		clone := git.Git().Clone(*Remote, "")
-		res, _, err := clone.Exec(context.Background(), cmd.ErrOrStderr())
+		clone := git.Git().Clone(*Remote, "tmp")
+		_, _, err := clone.Exec(context.Background(), cmd.ErrOrStderr())
 		if err != nil {
 			return err
 		}
-		cmd.Print(res, "\n")
 		return nil
 	},
 }
