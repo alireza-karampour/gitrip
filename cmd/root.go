@@ -1,30 +1,34 @@
-/*
-Copyright © 2025 NAME HERE <EMAIL ADDRESS>
-
-*/
 package cmd
 
 import (
+	"alireza-karampour/gitrip/git"
+	"context"
 	"os"
 
 	"github.com/spf13/cobra"
 )
 
-
+var (
+	Remote *string
+	Paths  *[]string
+)
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:   "gitrip",
-	Short: "A brief description of your application",
-	Long: `A longer description that spans multiple lines and likely contains
-examples and usage of using your application. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+	Short: "A simple cli for downloading a subset of files or directories from a git repo",
+	Long:  ``,
 	// Uncomment the following line if your bare application
 	// has an action associated with it:
-	// Run: func(cmd *cobra.Command, args []string) { },
+	RunE: func(cmd *cobra.Command, args []string) error {
+		clone := git.Git().Clone(*Remote, "")
+		res, _, err := clone.Exec(context.Background(), cmd.ErrOrStderr())
+		if err != nil {
+			return err
+		}
+		cmd.Print(res, "\n")
+		return nil
+	},
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.
@@ -37,15 +41,8 @@ func Execute() {
 }
 
 func init() {
-	// Here you will define your flags and configuration settings.
-	// Cobra supports persistent flags, which, if defined here,
-	// will be global for your application.
-
-	// rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.gitrip.yaml)")
-
-	// Cobra also supports local flags, which will only run
-	// when this action is called directly.
-	rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	Remote = rootCmd.Flags().StringP("remote", "r", "", "address of the git repo to download from (required)")
+	rootCmd.MarkFlagRequired("remote")
+	Paths = rootCmd.Flags().StringSliceP("paths", "p", nil, "files or directories to download")
+	rootCmd.MarkFlagRequired("paths")
 }
-
-
