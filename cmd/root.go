@@ -3,6 +3,7 @@ package cmd
 import (
 	"alireza-karampour/gitrip/git"
 	"context"
+	"fmt"
 	"os"
 
 	"github.com/spf13/cobra"
@@ -21,8 +22,18 @@ var rootCmd = &cobra.Command{
 	// Uncomment the following line if your bare application
 	// has an action associated with it:
 	RunE: func(cmd *cobra.Command, args []string) error {
-		clone := git.Git().Clone(*Remote, "tmp")
-		_, _, err := clone.Exec(context.Background(), cmd.ErrOrStderr())
+		dir, err := os.MkdirTemp("/tmp", "gr.*")
+		if err != nil {
+			return err
+		}
+		defer func() {
+			err := os.RemoveAll(dir)
+			if err != nil {
+				fmt.Println(err)
+			}
+		}()
+		clone := git.Git().Clone(*Remote, dir)
+		_, _, err = clone.Exec(context.Background(), cmd.ErrOrStderr())
 		if err != nil {
 			return err
 		}
