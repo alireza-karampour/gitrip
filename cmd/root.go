@@ -3,14 +3,17 @@ package cmd
 import (
 	"alireza-karampour/gitrip/git"
 	"context"
-	"fmt"
 	"io/fs"
 	"os"
+	"path/filepath"
+	"strings"
 
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
 var (
+	OldWd  string
 	Remote *string
 	Paths  *[]string
 	Tree   *string
@@ -25,6 +28,13 @@ var rootCmd = &cobra.Command{
 	// Uncomment the following line if your bare application
 	// has an action associated with it:
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if Dest != nil {
+			dst, err := filepath.Abs(*Dest)
+			if err != nil {
+				return err
+			}
+			*Dest = dst
+		}
 		dir, err := os.MkdirTemp("/tmp", "gr.*")
 		if err != nil {
 			return err
@@ -32,7 +42,7 @@ var rootCmd = &cobra.Command{
 		defer func() {
 			err := os.RemoveAll(dir)
 			if err != nil {
-				fmt.Println(err)
+				logrus.WithError(err).Error("failed to remove tmp dir")
 			}
 		}()
 		// clone
@@ -42,6 +52,11 @@ var rootCmd = &cobra.Command{
 			return err
 		}
 		// go inside
+		OldWd, err = os.Getwd()
+		if err != nil {
+			return err
+		}
+		logrus.Debugf("cd %s --> %s", OldWd, dir)
 		err = os.Chdir(dir)
 		if err != nil {
 			return err
@@ -60,7 +75,18 @@ var rootCmd = &cobra.Command{
 		}
 		// copy all to dest
 		err = fs.WalkDir(os.DirFS("."), ".", func(path string, d fs.DirEntry, err error) error {
-			fmt.Println(d.Name())
+			if err != nil {
+				return fs.SkipDir
+			}
+			if strings.HasSuffix(path, ".git") {
+				return fs.SkipDir
+			}
+			logrus.Debug(path)
+			dst := filepath.Join(*Dest, path)
+			logrus.Debugf("dest: %s", dst)
+			if d.IsDir() {
+
+			}
 			return nil
 		})
 		return nil
@@ -77,6 +103,13 @@ func Execute() {
 }
 
 func init() {
+	logrus.SetLevel(logrus.DebugLevel)
+	logrus.SetFormatter(&logrus.TextFormatter{
+		DisableTimestamp:       true,
+		DisableLevelTruncation: true,
+		PadLevelText:           true,
+		QuoteEmptyFields:       true,
+	})
 	Remote = rootCmd.Flags().StringP("remote", "r", "", "address of the git repo to download from (required)")
 	rootCmd.MarkFlagRequired("remote")
 	Paths = rootCmd.Flags().StringSliceP("paths", "p", nil, "files or directories to download (required)")
