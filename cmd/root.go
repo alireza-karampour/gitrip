@@ -3,6 +3,8 @@ package cmd
 import (
 	"alireza-karampour/gitrip/git"
 	"context"
+	"fmt"
+	"io/fs"
 	"os"
 
 	"github.com/spf13/cobra"
@@ -12,6 +14,7 @@ var (
 	Remote *string
 	Paths  *[]string
 	Tree   *string
+	Dest   *string
 )
 
 // rootCmd represents the base command when called without any subcommands
@@ -26,7 +29,12 @@ var rootCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
+		defer func() {
+			err := os.RemoveAll(dir)
+			if err != nil {
+				fmt.Println(err)
+			}
+		}()
 		// clone
 		clone := git.Git().Clone(*Remote, dir)
 		_, _, err = clone.Exec(context.Background(), cmd.ErrOrStderr())
@@ -50,6 +58,11 @@ var rootCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
+		// copy all to dest
+		err = fs.WalkDir(os.DirFS("."), ".", func(path string, d fs.DirEntry, err error) error {
+			fmt.Println(d.Name())
+			return nil
+		})
 		return nil
 	},
 }
@@ -70,4 +83,7 @@ func init() {
 	rootCmd.MarkFlagRequired("paths")
 	Tree = rootCmd.Flags().StringP("tree", "t", "", "tree to download files/directories from (required)")
 	rootCmd.MarkFlagRequired("tree")
+
+	// optional
+	Dest = rootCmd.Flags().StringP("dest", "d", ".", "destination to download files/directories to")
 }
