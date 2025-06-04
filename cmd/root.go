@@ -3,7 +3,6 @@ package cmd
 import (
 	"alireza-karampour/gitrip/git"
 	"context"
-	"fmt"
 	"os"
 
 	"github.com/spf13/cobra"
@@ -12,6 +11,7 @@ import (
 var (
 	Remote *string
 	Paths  *[]string
+	Tree   *string
 )
 
 // rootCmd represents the base command when called without any subcommands
@@ -44,7 +44,12 @@ var rootCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
+		// checkout to download files
+		chck := git.Git().Checkout(*Tree)
+		_, _, err = chck.Exec(context.Background(), cmd.ErrOrStderr())
+		if err != nil {
+			return err
+		}
 		return nil
 	},
 }
@@ -61,6 +66,8 @@ func Execute() {
 func init() {
 	Remote = rootCmd.Flags().StringP("remote", "r", "", "address of the git repo to download from (required)")
 	rootCmd.MarkFlagRequired("remote")
-	Paths = rootCmd.Flags().StringSliceP("paths", "p", nil, "files or directories to download")
+	Paths = rootCmd.Flags().StringSliceP("paths", "p", nil, "files or directories to download (required)")
 	rootCmd.MarkFlagRequired("paths")
+	Tree = rootCmd.Flags().StringP("tree", "t", "", "tree to download files/directories from (required)")
+	rootCmd.MarkFlagRequired("tree")
 }
