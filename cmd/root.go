@@ -42,6 +42,16 @@ var rootCmd = &cobra.Command{
 		})
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
+		nullDev, err := os.OpenFile(os.DevNull, os.O_WRONLY, 0666)
+		if err != nil {
+			return err
+		}
+		defer nullDev.Close()
+		var output io.Writer = nullDev
+		if *Verbose {
+			output = cmd.ErrOrStderr()
+		}
+
 		if Dest != nil {
 			dst, err := filepath.Abs(*Dest)
 			if err != nil {
@@ -61,7 +71,7 @@ var rootCmd = &cobra.Command{
 		}()
 		// clone
 		clone := git.Git().Clone(*Remote, dir)
-		_, _, err = clone.Exec(context.Background(), cmd.ErrOrStderr())
+		_, _, err = clone.Exec(context.Background(), output)
 		if err != nil {
 			return err
 		}
@@ -77,13 +87,13 @@ var rootCmd = &cobra.Command{
 		}
 		// enable sparse-checkout
 		sp := git.Git().Sp(*Paths...)
-		_, _, err = sp.Exec(context.Background(), cmd.ErrOrStderr())
+		_, _, err = sp.Exec(context.Background(), output)
 		if err != nil {
 			return err
 		}
 		// checkout to download files
 		chck := git.Git().Checkout(*Tree)
-		_, _, err = chck.Exec(context.Background(), cmd.ErrOrStderr())
+		_, _, err = chck.Exec(context.Background(), output)
 		if err != nil {
 			return err
 		}
