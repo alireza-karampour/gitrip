@@ -27,13 +27,20 @@ var rootCmd = &cobra.Command{
 			return err
 		}
 
+		// clone
 		clone := git.Git().Clone(*Remote, dir)
 		_, _, err = clone.Exec(context.Background(), cmd.ErrOrStderr())
 		if err != nil {
 			return err
 		}
-
+		// go inside
 		err = os.Chdir(dir)
+		if err != nil {
+			return err
+		}
+		// enable sparse-checkout
+		sp := git.Git().Sp(*Paths...)
+		_, _, err = sp.Exec(context.Background(), cmd.ErrOrStderr())
 		if err != nil {
 			return err
 		}
