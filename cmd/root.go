@@ -3,7 +3,6 @@ package cmd
 import (
 	"alireza-karampour/gitrip/git"
 	"context"
-	"fmt"
 	"io"
 	"io/fs"
 	"os"
@@ -106,6 +105,9 @@ var rootCmd = &cobra.Command{
 				go func() {
 					defer logrus.Debugf("copied %s", path)
 					defer copyWg.Done()
+					defer dstFile.Close()
+					defer srcFile.Close()
+
 					_, err := io.Copy(dstFile, srcFile)
 					if err != nil {
 						logrus.WithError(err).Errorf("failed to copy file '%s'", path)
