@@ -3,10 +3,13 @@ package cmd
 import (
 	"alireza-karampour/gitrip/git"
 	"context"
+	"fmt"
+	"io"
 	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -74,6 +77,7 @@ var rootCmd = &cobra.Command{
 			return err
 		}
 		// copy all to dest
+		copyWg := sync.WaitGroup{}
 		err = fs.WalkDir(os.DirFS("."), ".", func(path string, d fs.DirEntry, err error) error {
 			if err != nil {
 				return fs.SkipDir
@@ -85,10 +89,36 @@ var rootCmd = &cobra.Command{
 			dst := filepath.Join(*Dest, path)
 			logrus.Debugf("dest: %s", dst)
 			if d.IsDir() {
-
+				err = os.MkdirAll(dst, 0777)
+				if err != nil {
+					return err
+				}
+			} else {
+				dstFile, err := os.OpenFile(dst, os.O_WRONLY|os.O_TRUNC|os.O_CREATE, 0666)
+				if err != nil {
+					return err
+				}
+				srcFile, err := os.OpenFile(path, os.O_RDONLY, 0666)
+				if err != nil {
+					return err
+				}
+				copyWg.Add(1)
+				go func() {
+					defer logrus.Debugf("copied %s", path)
+					defer copyWg.Done()
+					_, err := io.Copy(dstFile, srcFile)
+					if err != nil {
+						logrus.WithError(err).Errorf("failed to copy file '%s'", path)
+						return
+					}
+				}()
 			}
 			return nil
 		})
+		copyWg.Wait()
+		if err != nil {
+			return err
+		}
 		return nil
 	},
 }
