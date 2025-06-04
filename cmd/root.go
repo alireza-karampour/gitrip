@@ -15,11 +15,12 @@ import (
 )
 
 var (
-	OldWd  string
-	Remote *string
-	Paths  *[]string
-	Tree   *string
-	Dest   *string
+	OldWd   string
+	Remote  *string
+	Paths   *[]string
+	Tree    *string
+	Dest    *string
+	Verbose *bool
 )
 
 // rootCmd represents the base command when called without any subcommands
@@ -29,6 +30,17 @@ var rootCmd = &cobra.Command{
 	Long:  ``,
 	// Uncomment the following line if your bare application
 	// has an action associated with it:
+	PreRun: func(cmd *cobra.Command, args []string) {
+		if *Verbose {
+			logrus.SetLevel(logrus.DebugLevel)
+		}
+		logrus.SetFormatter(&logrus.TextFormatter{
+			DisableTimestamp:       true,
+			DisableLevelTruncation: true,
+			PadLevelText:           true,
+			QuoteEmptyFields:       true,
+		})
+	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if Dest != nil {
 			dst, err := filepath.Abs(*Dest)
@@ -135,13 +147,6 @@ func Execute() {
 }
 
 func init() {
-	logrus.SetLevel(logrus.DebugLevel)
-	logrus.SetFormatter(&logrus.TextFormatter{
-		DisableTimestamp:       true,
-		DisableLevelTruncation: true,
-		PadLevelText:           true,
-		QuoteEmptyFields:       true,
-	})
 	Remote = rootCmd.Flags().StringP("remote", "r", "", "address of the git repo to download from (required)")
 	rootCmd.MarkFlagRequired("remote")
 	Paths = rootCmd.Flags().StringSliceP("paths", "p", nil, "files or directories to download (required)")
@@ -151,4 +156,5 @@ func init() {
 
 	// optional
 	Dest = rootCmd.Flags().StringP("dest", "d", ".", "destination to download files/directories to")
+	Verbose = rootCmd.Flags().BoolP("verbose", "v", false, "whether debug logs should be printed")
 }
