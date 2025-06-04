@@ -1,4 +1,4 @@
-module alireza-karampour/gitrip
+module github.com/alireza-karampour/gitrip
 
 go 1.24.2
 

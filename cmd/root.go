@@ -1,8 +1,8 @@
 package cmd
 
 import (
-	"alireza-karampour/gitrip/git"
 	"context"
+	"github.com/alireza-karampour/gitrip/git"
 	"io"
 	"io/fs"
 	"os"
