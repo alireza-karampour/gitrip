@@ -26,17 +26,18 @@ var rootCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		defer func() {
-			err := os.RemoveAll(dir)
-			if err != nil {
-				fmt.Println(err)
-			}
-		}()
+
 		clone := git.Git().Clone(*Remote, dir)
 		_, _, err = clone.Exec(context.Background(), cmd.ErrOrStderr())
 		if err != nil {
 			return err
 		}
+
+		err = os.Chdir(dir)
+		if err != nil {
+			return err
+		}
+
 		return nil
 	},
 }
