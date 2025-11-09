@@ -24,10 +24,12 @@ func Git() *Cmd {
 func (c *Cmd) Clone(remote string, dest string) *Cmd {
 	if dest != "" {
 		c.beforeExec = append(c.beforeExec, func() error {
-			return os.MkdirAll(dest, 0777)
+			return os.MkdirAll(dest, 0o777)
 		})
 	}
 	c.cmdBuf = append(c.cmdBuf, "clone")
+	c.cmdBuf = append(c.cmdBuf, "--depth")
+	c.cmdBuf = append(c.cmdBuf, "1")
 	c.cmdBuf = append(c.cmdBuf, "--no-checkout")
 	c.cmdBuf = append(c.cmdBuf, remote)
 	if dest != "" {
@@ -45,6 +47,7 @@ func (c *Cmd) Checkout(tree string) *Cmd {
 func (c *Cmd) Sp(paths ...string) *Cmd {
 	c.cmdBuf = append(c.cmdBuf, "sparse-checkout")
 	c.cmdBuf = append(c.cmdBuf, "set")
+	c.cmdBuf = append(c.cmdBuf, "--no-cone")
 	c.cmdBuf = append(c.cmdBuf, paths...)
 	return c
 }
